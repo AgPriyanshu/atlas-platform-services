@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from ..models import Category, InventoryItem
 from ..serializers import SearchItemSerializer
 from ..services.search import build_search_qs, log_search
 
@@ -65,3 +66,43 @@ class SearchItemsView(APIView):
                 "next_cursor": next_cursor,
             }
         )
+
+
+class SearchAutocompleteView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "ds_search_anon"
+
+    def get(self, request: Request):
+        q = request.query_params.get("q", "").strip()
+
+        if len(q) < 2:
+            return Response({"suggestions": []})
+
+        item_names = list(
+            InventoryItem.objects.filter(
+                name__icontains=q,
+                status=InventoryItem.Status.ACTIVE,
+            )
+            .values_list("name", flat=True)
+            .distinct()[:8]
+        )
+
+        category_names = list(
+            Category.objects.filter(name__icontains=q).values_list("name", flat=True)[:4]
+        )
+
+        seen: set[str] = set()
+        suggestions: list[str] = []
+
+        for name in item_names + category_names:
+            key = name.lower()
+
+            if key not in seen:
+                seen.add(key)
+                suggestions.append(name)
+
+            if len(suggestions) >= 10:
+                break
+
+        return Response({"suggestions": suggestions})

@@ -8,7 +8,7 @@ from .leads import (
     ReportCreateView,
 )
 from .ping import ping
-from .search import SearchItemsView
+from .search import SearchAutocompleteView, SearchItemsView
 from .shops import ShopViewSet
 
 __all__ = [
@@ -19,6 +19,7 @@ __all__ = [
     "ShopViewSet",
     "InventoryItemViewSet",
     "CategoryViewSet",
+    "SearchAutocompleteView",
     "SearchItemsView",
     "LeadCreateView",
     "LeadInboxView",
