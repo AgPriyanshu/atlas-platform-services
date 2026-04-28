@@ -225,18 +225,37 @@ class ConfirmImageRequestSerializer(serializers.Serializer):
 
 
 class LeadSerializer(serializers.ModelSerializer):
+    buyer_name = serializers.SerializerMethodField()
+    buyer_phone = serializers.SerializerMethodField()
+    item_name = serializers.SerializerMethodField()
+
     class Meta:
         model = Lead
         fields = (
             "id",
             "buyer",
+            "buyer_name",
+            "buyer_phone",
             "shop",
             "item",
+            "item_name",
             "message",
             "contacted_at",
             "created_at",
         )
         read_only_fields = fields
+
+    def get_buyer_name(self, obj):
+        return obj.buyer.first_name or obj.buyer.username
+
+    def get_buyer_phone(self, obj):
+        username = obj.buyer.username
+        if username.startswith("ds-buyer-"):
+            return username[len("ds-buyer-"):]
+        return None
+
+    def get_item_name(self, obj):
+        return obj.item.name if obj.item else None
 
 
 class CreateLeadSerializer(serializers.Serializer):

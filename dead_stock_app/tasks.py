@@ -1,7 +1,9 @@
 import io
 import logging
+from datetime import timedelta
 
 from celery import shared_task
+from django.utils import timezone
 from PIL import Image
 
 from shared.infrastructure import InfraManager
@@ -56,3 +58,27 @@ def generate_image_variants(self, item_image_id: str):
     except Exception as exc:
         logger.exception("Failed to generate variants for ItemImage %s.", item_image_id)
         raise self.retry(exc=exc)
+
+
+@shared_task
+def sweep_stale_items():
+    """Hide inventory items that have not been refreshed in 60 days."""
+    from .models import InventoryItem
+
+    cutoff = timezone.now() - timedelta(days=30)
+    ids_to_hide = list(
+        InventoryItem.objects.filter(
+            stale_at__lt=cutoff,
+            status=InventoryItem.Status.ACTIVE,
+        )
+        .values_list("pk", flat=True)
+        .iterator(chunk_size=500)
+    )
+
+    if ids_to_hide:
+        InventoryItem.objects.filter(pk__in=ids_to_hide).update(
+            status=InventoryItem.Status.HIDDEN
+        )
+        logger.info("Stale sweep: hid %d items.", len(ids_to_hide))
+
+    return f"Hidden {len(ids_to_hide)} stale items."

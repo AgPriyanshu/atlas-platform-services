@@ -84,6 +84,27 @@ class LeadInboxView(APIView):
         return Response(LeadSerializer(leads, many=True).data)
 
 
+class LeadMarkContactedView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        shop = Shop.objects.filter(user=request.user).first()
+
+        if not shop:
+            raise PermissionDenied("Create a shop before managing leads.")
+
+        try:
+            lead = Lead.objects.select_related("buyer", "item", "shop").get(
+                pk=pk, shop=shop
+            )
+        except Lead.DoesNotExist as exc:
+            raise NotFound("Lead not found.") from exc
+
+        lead.contacted_at = timezone.now()
+        lead.save(update_fields=["contacted_at", "updated_at"])
+        return Response(LeadSerializer(lead).data)
+
+
 class ReportCreateView(APIView):
     permission_classes = [AllowAny]
 
