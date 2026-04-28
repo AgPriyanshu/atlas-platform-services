@@ -161,3 +161,5 @@ zstandard==0.25.0
 geopy==2.4.1
 matplotlib==3.10.8
 shapely==2.1.2
+sentry-sdk[django,celery]==2.58.0
+python-json-logger==4.1.0

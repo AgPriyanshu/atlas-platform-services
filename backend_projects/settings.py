@@ -1,6 +1,19 @@
 import os
 from pathlib import Path
 
+import sentry_sdk
+from sentry_sdk.integrations.celery import CeleryIntegration
+from sentry_sdk.integrations.django import DjangoIntegration
+
+sentry_sdk.init(
+    dsn=os.environ.get("SENTRY_DSN"),
+    environment=os.environ.get("ENV", "dev"),
+    traces_sample_rate=0.1,
+    profiles_sample_rate=0.05,
+    send_default_pii=False,
+    integrations=[DjangoIntegration(), CeleryIntegration()],
+)
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -74,6 +87,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "dead_stock_app.middleware.DeadStockSentryMiddleware",
 ]
 
 # if DEBUG:
@@ -290,3 +304,30 @@ MSG91_TEMPLATE_ID = os.environ.get("MSG91_TEMPLATE_ID", "")
 MSG91_SENDER_ID = os.environ.get("MSG91_SENDER_ID", "DSTOCK")
 DS_JWT_SECRET = os.environ.get("DS_JWT_SECRET", SECRET_KEY)
 DS_JWT_TTL_SECONDS = int(os.environ.get("DS_JWT_TTL_SECONDS", "2592000"))
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {
+            "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
+            "format": "%(asctime)s %(levelname)s %(name)s %(message)s",
+        },
+        "simple": {
+            "format": "[%(levelname)s] %(name)s: %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "json" if not DEBUG else "simple",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "dead_stock_app": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
+    },
+}
