@@ -11,7 +11,8 @@ from django.utils import timezone
 
 from shared.utils.redis import get_notifications_channel
 
-from .models import InventoryItem, Lead
+from .models import InventoryItem, Lead, Shop
+from .services.cache import nearby_cache_invalidate_all
 
 logger = logging.getLogger(__name__)
 
@@ -53,3 +54,11 @@ def notify_shop_owner_on_lead(sender, instance, created, **kwargs):
         _redis_client.publish(channel, json.dumps(payload))
     except Exception:
         logger.exception("Failed to publish lead SSE event for lead %s.", instance.pk)
+
+
+@receiver(post_save, sender=Shop)
+def invalidate_nearby_cache_on_shop_change(sender, instance, **kwargs):
+    try:
+        nearby_cache_invalidate_all()
+    except Exception:
+        logger.exception("Failed to invalidate nearby cache for shop %s.", instance.pk)

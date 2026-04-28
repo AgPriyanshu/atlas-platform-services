@@ -226,6 +226,16 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.ScopedRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "ds_search_anon": "60/min",
+        "ds_search_auth": "300/min",
+        "ds_lead_anon": "5/min",
+        "ds_lead_auth": "20/min",
+        "ds_otp_request": "1/min",
+    },
 }
 
 # Internationalization
