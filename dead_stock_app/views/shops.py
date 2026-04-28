@@ -13,6 +13,7 @@ from ..serializers import (
     ShopSerializer,
     ShopWithDistanceSerializer,
 )
+from ..services.cache import nearby_cache_get, nearby_cache_set
 
 
 class ShopViewSet(viewsets.ViewSet):
@@ -75,15 +76,20 @@ class ShopViewSet(viewsets.ViewSet):
         radius_km = float(request.query_params.get("radius_km", 5))
         limit = min(int(request.query_params.get("limit", 20)), 100)
 
+        cached = nearby_cache_get(lat, lng, radius_km)
+
+        if cached is not None:
+            return Response({"shops": cached})
+
         point = Point(lng, lat, srid=4326)
         qs = (
             Shop.objects.annotate(distance=Distance("location", point))
             .filter(location__dwithin=(point, D(km=radius_km)))
             .order_by("distance")[:limit]
         )
-        return Response(
-            {"shops": ShopWithDistanceSerializer(qs, many=True).data}
-        )
+        data = ShopWithDistanceSerializer(qs, many=True).data
+        nearby_cache_set(lat, lng, radius_km, data)
+        return Response({"shops": data})
 
     @action(detail=True, methods=["get"], permission_classes=[AllowAny])
     def items(self, request, pk=None):

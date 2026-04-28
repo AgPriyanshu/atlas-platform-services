@@ -3,6 +3,7 @@ import logging
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from ..serializers import SearchItemSerializer
@@ -22,6 +23,8 @@ def _float_or_none(value: str | None) -> float | None:
 
 class SearchItemsView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "ds_search_anon"
 
     def get(self, request: Request):
         q = request.query_params.get("q", "").strip()
