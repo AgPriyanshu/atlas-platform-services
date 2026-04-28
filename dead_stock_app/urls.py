@@ -6,6 +6,7 @@ from .views import (
     InventoryItemViewSet,
     LeadCreateView,
     LeadInboxView,
+    LeadMarkContactedView,
     OTPRequestView,
     OTPVerifyView,
     RefreshTokenView,
@@ -28,6 +29,7 @@ urlpatterns = [
     path("search/items/", SearchItemsView.as_view(), name="ds-search-items"),
     path("leads/", LeadCreateView.as_view(), name="ds-leads-create"),
     path("leads/inbox/", LeadInboxView.as_view(), name="ds-leads-inbox"),
+    path("leads/<uuid:pk>/contacted/", LeadMarkContactedView.as_view(), name="ds-leads-contacted"),
     path("reports/", ReportCreateView.as_view(), name="ds-reports-create"),
     path("", include(router.urls)),
 ]

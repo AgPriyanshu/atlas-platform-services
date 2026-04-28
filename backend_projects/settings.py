@@ -188,6 +188,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "agent_manager.tasks.cleanup_stale_pending_messages",
         "schedule": 300,  # Every 5 minutes.
     },
+    "dead-stock-sweep-stale": {
+        "task": "dead_stock_app.tasks.sweep_stale_items",
+        "schedule": 3600,  # Hourly.
+    },
 }
 
 # Password validation
