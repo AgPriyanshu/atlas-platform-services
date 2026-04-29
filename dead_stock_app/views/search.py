@@ -1,4 +1,5 @@
 import logging
+import os
 
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
@@ -73,18 +74,28 @@ class SearchAutocompleteView(APIView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "ds_search_anon"
 
+    def _thumb_url(self, s3_key: str) -> str | None:
+        base = os.environ.get("S3_PUBLIC_ENDPOINT", "").rstrip("/")
+        bucket = os.environ.get("S3_BUCKET", "")
+
+        if not (base and bucket and s3_key):
+            return None
+
+        prefix = s3_key.rsplit("/originals/", 1)[0]
+        return f"{base}/{bucket}/{prefix}/variants/thumb_200.webp"
+
     def get(self, request: Request):
         q = request.query_params.get("q", "").strip()
 
         if len(q) < 2:
             return Response({"suggestions": []})
 
-        item_names = list(
+        items = (
             InventoryItem.objects.filter(
                 name__icontains=q,
                 status=InventoryItem.Status.ACTIVE,
             )
-            .values_list("name", flat=True)
+            .prefetch_related("images")
             .distinct()[:8]
         )
 
@@ -93,14 +104,27 @@ class SearchAutocompleteView(APIView):
         )
 
         seen: set[str] = set()
-        suggestions: list[str] = []
+        suggestions: list[dict] = []
 
-        for name in item_names + category_names:
+        for item in items:
+            key = item.name.lower()
+
+            if key not in seen:
+                seen.add(key)
+                images = list(item.images.all())
+                primary = next((img for img in images if img.is_primary), images[0] if images else None)
+                thumbnail = self._thumb_url(primary.s3_key) if primary and primary.variants_ready else None
+                suggestions.append({"name": item.name, "thumbnail": thumbnail, "type": "item"})
+
+            if len(suggestions) >= 8:
+                break
+
+        for name in category_names:
             key = name.lower()
 
             if key not in seen:
                 seen.add(key)
-                suggestions.append(name)
+                suggestions.append({"name": name, "thumbnail": None, "type": "category"})
 
             if len(suggestions) >= 10:
                 break

@@ -191,6 +191,9 @@ class SearchItemSerializer(InventoryItemSerializer):
     shop_lat = serializers.SerializerMethodField()
     shop_lng = serializers.SerializerMethodField()
     shop_phone = serializers.CharField(source="shop.phone", read_only=True)
+    category_slug = serializers.SlugRelatedField(
+        source="category", slug_field="slug", read_only=True
+    )
 
     class Meta(InventoryItemSerializer.Meta):
         fields = InventoryItemSerializer.Meta.fields + (
@@ -198,6 +201,7 @@ class SearchItemSerializer(InventoryItemSerializer):
             "shop_lat",
             "shop_lng",
             "shop_phone",
+            "category_slug",
         )
 
     def get_distance_m(self, obj):
