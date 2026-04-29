@@ -87,7 +87,7 @@ openai==2.32.0
 orjson==3.11.8
 ormsgpack==1.12.2
 packaging==25.0
-pathspec==0.12.1
+pathspec==1.0.1
 pillow==12.2.0
 platformdirs==4.3.6
 pre_commit==4.0.1
