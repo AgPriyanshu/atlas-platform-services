@@ -1,5 +1,5 @@
 # Use the official Python image as the base (slim)
-FROM python:3.14-slim
+FROM python:3.12-slim
 
 # Avoid prompts during package installs
 ARG DEBIAN_FRONTEND=noninteractive
