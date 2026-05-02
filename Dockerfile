@@ -33,18 +33,18 @@ RUN set -eux; \
 # Copy only requirements first to leverage Docker cache
 COPY requirements.txt ./
 
-# Upgrade pip, install python deps (no cache), install GDAL python wheel matching system GDAL
-# then purge build tools to reduce final image size
-RUN set -eux; \
-    pip install --upgrade pip setuptools wheel --no-cache-dir; \
-    pip install --no-cache-dir -r requirements.txt; \
+# Upgrade pip, install python deps, install GDAL python wheel matching system GDAL,
+# then purge build tools to reduce final image size.
+# The pip cache mount is shared across builds so packages are never re-downloaded.
+RUN --mount=type=cache,target=/root/.cache/pip \
+    set -eux; \
+    pip install --upgrade pip setuptools wheel; \
+    pip install -r requirements.txt; \
     if command -v gdal-config >/dev/null 2>&1; then \
         GDAL_VERSION=$(gdal-config --version); \
-        pip install --no-cache-dir "GDAL==${GDAL_VERSION}" || true; \
+        pip install "GDAL==${GDAL_VERSION}" || true; \
     fi; \
-    # remove build deps (they are no longer needed after wheels are built/installed)
-    apt-get purge -y --auto-remove build-essential gcc || true; \
-    rm -rf /root/.cache/pip
+    apt-get purge -y --auto-remove build-essential gcc || true
 
 # Copy the rest of the project files
 COPY . .
