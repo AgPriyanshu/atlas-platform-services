@@ -1033,22 +1033,6 @@ class TestOTPAuth(TestCase):
     @patch("dead_stock_app.views.auth.verify_otp")
     def test_otp_verify_success_returns_token(self, mock_verify):
         mock_verify.return_value = True
-        make_user(username="+919876543210")
-        url = reverse("ds-otp-verify")
-
-        response = self.client.post(
-            url, {"phone": "+919876543210", "otp": "123456"}, format="json"
-        )
-        data = response.json()["data"]
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("token", data)
-        self.assertIn("has_shop", data)
-        self.assertFalse(data["has_shop"])
-
-    @patch("dead_stock_app.views.auth.verify_otp")
-    def test_otp_verify_has_shop_true_when_shop_exists(self, mock_verify):
-        mock_verify.return_value = True
         user = make_user(username="+919876543210")
         make_shop(user, location=BENGALURU)
         url = reverse("ds-otp-verify")
@@ -1058,7 +1042,31 @@ class TestOTPAuth(TestCase):
         )
         data = response.json()["data"]
 
-        self.assertTrue(data["has_shop"])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("token", data)
+
+    @patch("dead_stock_app.views.auth.verify_otp")
+    def test_otp_verify_without_shop_returns_403(self, mock_verify):
+        mock_verify.return_value = True
+        make_user(username="+919876543210")
+        url = reverse("ds-otp-verify")
+
+        response = self.client.post(
+            url, {"phone": "+919876543210", "otp": "123456"}, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    @patch("dead_stock_app.views.auth.verify_otp")
+    def test_otp_verify_unregistered_phone_returns_403(self, mock_verify):
+        mock_verify.return_value = True
+        url = reverse("ds-otp-verify")
+
+        response = self.client.post(
+            url, {"phone": "+919876543210", "otp": "123456"}, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_refresh_token_returns_new_token(self):
         user = make_user(username="+919876543210")

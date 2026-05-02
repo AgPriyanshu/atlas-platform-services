@@ -1,7 +1,7 @@
 import jwt
 from django.contrib.auth.models import User
 from rest_framework import status
-from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -50,16 +50,20 @@ class OTPVerifyView(APIView):
 
         verify_otp(phone, otp)
 
-        user, _ = User.objects.get_or_create(username=phone)
+        user = User.objects.filter(username=phone).first()
+        if not user or not Shop.objects.filter(user=user).exists():
+            raise PermissionDenied(
+                "No shop is registered for this number. "
+                "Please sign up to create your shop first."
+            )
+
         token = issue_token(user)
-        has_shop = Shop.objects.filter(user=user).exists()
 
         return Response(
             {
                 "token": token["token"],
                 "expires_at": token["expires_at"],
                 "user": {"id": user.id, "phone": user.username},
-                "has_shop": has_shop,
             }
         )
 
