@@ -21,20 +21,20 @@ services:
         condition: service_started
     env_file: ./.env
 
-  beat:
-    build: .
-    container_name: celery_beat
-    profiles: [ dead-stock ]
-    command: celery -A backend_projects beat -l info
-    volumes:
-      - .:/app
-    entrypoint: ""
-    depends_on:
-      redis:
-        condition: service_started
-      db:
-        condition: service_healthy
-    env_file: ./.env
+  # beat:
+  #   build: .
+  #   container_name: celery_beat
+  #   profiles: [ dead-stock ]
+  #   command: celery -A backend_projects beat -l info
+  #   volumes:
+  #     - .:/app
+  #   entrypoint: ""
+  #   depends_on:
+  #     redis:
+  #       condition: service_started
+  #     db:
+  #       condition: service_healthy
+  #   env_file: ./.env
 
   worker:
     build: .
@@ -122,6 +122,10 @@ services:
                 }
               ],
               "actions": ["Admin", "Read", "Write"]
+            },
+            {
+              "name": "anonymous",
+              "actions": ["Read"]
             }
           ]
         }

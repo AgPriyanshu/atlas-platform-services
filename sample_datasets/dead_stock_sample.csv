@@ -1,0 +1,11 @@
+name,sku,description,quantity,price,condition,status,category_slug
+Bosch GBH 2-26 Rotary Hammer,SKU-001,Barely used rotary hammer drill. Original box included. 800W motor.,2,4500,used,active,cutting-tools
+Allen Bradley PLC Module,SKU-002,AB 1756-L71 ControlLogix processor. Pulled from decommissioned line.,1,28000,open_box,active,electrical
+SKF Deep Groove Ball Bearing 6205,SKU-003,Pack of 10 bearings. Never opened. Surplus from project.,10,1200,new,active,bearings
+M12 x 50mm Hex Bolts (Box of 100),SKU-004,Grade 8.8 zinc-plated. Full box unopened.,1,850,new,active,fasteners
+Siemens Sinamics V20 VFD 2.2kW,SKU-005,Variable frequency drive removed during plant upgrade. Tested OK.,1,12500,used,active,motors
+50m Armoured Copper Cable 4-core 10mm,SKU-006,Leftover from electrical installation. Cut from drum.,1,3200,new,active,cables-wires
+Pneumatic Air Cylinder 63mm Bore,SKU-007,SMC NCDGBN63 double acting cylinder. Unused old stock.,4,2100,new,active,compressors
+Carbide Insert WNMG 080408,SKU-008,Box of 10 inserts. Sandvik Coromant. 2 inserts used.,1,1800,open_box,active,cutting-tools
+ABB ACS550 VFD 7.5kW,SKU-009,Surplus drive from cancelled project. In original packaging.,1,22000,new,active,motors
+Mitutoyo Digital Vernier Caliper 150mm,SKU-010,Excellent condition. Comes with case and calibration certificate.,1,3500,used,active,

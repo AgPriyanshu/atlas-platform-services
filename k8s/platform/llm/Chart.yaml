@@ -1,9 +1,0 @@
-apiVersion: v2
-name: platform-llm
-description: vLLM OpenAI-compatible inference server
-type: application
-version: 0.1.0
-appVersion: "latest"
-maintainers:
-  - name: AgPriyanshu
-    email: priyanshu81212@gmail.com

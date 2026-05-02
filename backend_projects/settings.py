@@ -1,19 +1,6 @@
 import os
 from pathlib import Path
 
-import sentry_sdk
-from sentry_sdk.integrations.celery import CeleryIntegration
-from sentry_sdk.integrations.django import DjangoIntegration
-
-sentry_sdk.init(
-    dsn=os.environ.get("SENTRY_DSN"),
-    environment=os.environ.get("ENV", "dev"),
-    traces_sample_rate=0.1,
-    profiles_sample_rate=0.05,
-    send_default_pii=False,
-    integrations=[DjangoIntegration(), CeleryIntegration()],
-)
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -87,7 +74,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "dead_stock_app.middleware.DeadStockSentryMiddleware",
 ]
 
 # if DEBUG:
