@@ -26,7 +26,7 @@ class ShopViewSet(viewsets.ViewSet):
     """
 
     def get_permissions(self):
-        if self.action in ("retrieve", "nearby"):
+        if self.action in ("retrieve", "nearby", "items"):
             return [AllowAny()]
         return [IsAuthenticated()]
 

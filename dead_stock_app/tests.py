@@ -288,11 +288,9 @@ class TestShopViewSet(TestCase):
         shop = make_shop(self.owner)
         make_item(self.owner, shop, name="Active Item", status=InventoryItem.Status.ACTIVE)
         make_item(self.owner, shop, name="Hidden Item", status=InventoryItem.Status.HIDDEN)
-        # The items action is not in get_permissions()'s allow-list, so it requires auth.
-        client = auth_client(self.owner)
         url = reverse("ds-shops-items", kwargs={"pk": shop.pk})
 
-        response = client.get(url)
+        response = APIClient().get(url)
         data = response.json()["data"]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
