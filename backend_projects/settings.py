@@ -89,9 +89,9 @@ CORS_ALLOWED_ORIGINS = (
     [o.strip() for o in _cors_origins_env.split(",") if o.strip()]
     if _cors_origins_env
     else [
-        "http://localhost:3000",   # React dev
+        "http://localhost:3000",  # React dev
         "http://127.0.0.1:3000",
-        "http://localhost:5173",   # Vite dev
+        "http://localhost:5173",  # Vite dev
         "http://127.0.0.1:5173",
         "https://worldofapps.bar",
         "https://app.worldofapps.bar",
@@ -99,7 +99,7 @@ CORS_ALLOWED_ORIGINS = (
     ]
 )
 
-CORS_ALLOW_ALL_ORIGINS = DEBUG   # True only in local dev (DEBUG=1)
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # True only in local dev (DEBUG=1)
 CORS_ALLOW_CREDENTIALS = True
 
 # Security/Proxy settings for K8s (behind Nginx/Cloudflare)
@@ -270,18 +270,6 @@ INTERNAL_IPS = [
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
-# LLM Server Configuration
-LLM_SERVER_CONFIG = {
-    "BASE_URL": os.environ.get("LLM_SERVER_URL", "http://100.64.122.97:8080/v1"),
-    "DEFAULT_MODEL": os.environ.get("LLM_DEFAULT_MODEL", "Qwen/Qwen3-8B-AWQ"),
-    "TIMEOUT": int(
-        os.environ.get("LLM_TIMEOUT", "120")
-    ),  # Increased for geospatial tool processing
-    "MAX_TOKENS": int(os.environ.get("LLM_MAX_TOKENS", "2000")),
-    "TEMPERATURE": float(os.environ.get("LLM_TEMPERATURE", "0.7")),
-    "ENABLE_TOOLS": os.environ.get("LLM_ENABLE_TOOLS", "true").lower() == "true",
-}
-
 
 DEFAULT_CURRENCY = "INR"
 
@@ -315,6 +303,15 @@ LOGGING = {
         "level": "INFO",
     },
     "loggers": {
-        "dead_stock_app": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
+        "dead_stock_app": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "agent_manager": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
     },
 }

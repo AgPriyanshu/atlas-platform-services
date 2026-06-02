@@ -1,9 +1,5 @@
-from langchain.messages import AnyMessage, HumanMessage
+from .schemas import Node
 
 
-def get_latest_human_message(messages: list[AnyMessage]) -> HumanMessage:
-    for message in reversed(messages):
-        if isinstance(message, HumanMessage):
-            return message
-
-    raise ValueError("A human message is required.")
+def create_path_map(nodes: list[Node | str]) -> dict:
+    return {node: node for node in nodes}

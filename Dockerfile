@@ -1,26 +1,50 @@
-# Use the official Python image as the base (slim)
-FROM python:3.12-slim
+# ---- builder: installs all Python dependencies into an isolated venv ----
+FROM python:3.12-slim-bookworm AS builder
 
-# Avoid prompts during package installs
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
-
-# Set work directory
-WORKDIR /app
-
-# Install system dependencies (build deps are removed afterwards to keep the image small)
-# - --no-install-recommends reduces installed packages
-# - all install, builds, and cleanup happen in a single RUN to avoid extra layers
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
         build-essential \
         gcc \
-        ca-certificates \
         libpq-dev \
+        libgdal-dev \
+        libgeos-dev \
+        libproj-dev \
+        libspatialite-dev \
+    ; \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt ./
+
+RUN --mount=type=cache,target=/root/.cache/pip \
+    set -eux; \
+    python -m venv /opt/venv; \
+    /opt/venv/bin/pip install --upgrade pip setuptools wheel; \
+    /opt/venv/bin/pip install -r requirements.txt; \
+    if command -v gdal-config >/dev/null 2>&1; then \
+        GDAL_VERSION=$(gdal-config --version); \
+        /opt/venv/bin/pip install "GDAL==${GDAL_VERSION}" || true; \
+    fi
+
+# ---- runtime: lean image without build tools ----
+FROM python:3.12-slim-bookworm AS runtime
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    VIRTUAL_ENV=/opt/venv \
+    PATH="/opt/venv/bin:$PATH"
+
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        libpq5 \
         gdal-bin \
         libgdal-dev \
         libgeos-dev \
@@ -28,32 +52,23 @@ RUN set -eux; \
         libspatialite-dev \
         spatialite-bin \
     ; \
-    rm -rf /var/lib/apt/lists/*;
+    rm -rf /var/lib/apt/lists/*; \
+    groupadd --gid 1001 appgroup; \
+    useradd --uid 1001 --gid appgroup --no-create-home --shell /bin/bash appuser
 
-# Copy only requirements first to leverage Docker cache
-COPY requirements.txt ./
+WORKDIR /app
 
-# Upgrade pip, install python deps, install GDAL python wheel matching system GDAL,
-# then purge build tools to reduce final image size.
-# The pip cache mount is shared across builds so packages are never re-downloaded.
-RUN --mount=type=cache,target=/root/.cache/pip \
-    set -eux; \
-    pip install --upgrade pip setuptools wheel; \
-    pip install -r requirements.txt; \
-    if command -v gdal-config >/dev/null 2>&1; then \
-        GDAL_VERSION=$(gdal-config --version); \
-        pip install "GDAL==${GDAL_VERSION}" || true; \
-    fi; \
-    apt-get purge -y --auto-remove build-essential gcc || true
+COPY --from=builder /opt/venv /opt/venv
 
-# Copy the rest of the project files
-COPY . .
+COPY --chown=appuser:appgroup . .
 
-# Ensure the entrypoint script is executable
-RUN [ -f ./docker-entrypoint.sh ] && chmod +x ./docker-entrypoint.sh || true
+RUN chmod +x ./docker-entrypoint.sh
 
-# Expose port 8000
+USER appuser
+
 EXPOSE 8000
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
-CMD uvicorn backend_projects.asgi:application --host 0.0.0.0 --port 8000 --workers 9 --log-config log_config.yaml --ws wsproto
+CMD ["uvicorn", "backend_projects.asgi:application", \
+     "--host", "0.0.0.0", "--port", "8000", \
+     "--workers", "9", "--log-config", "log_config.yaml", "--ws", "wsproto"]

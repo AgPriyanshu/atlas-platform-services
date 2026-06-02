@@ -24,3 +24,10 @@ class EnvVariable(Enum):
         "S3_BUCKET_NAME", os.environ.get("S3_BUCKET", "woa")
     )
     S3_BUCKET = os.environ.get("S3_BUCKET", S3_BUCKET_NAME)
+
+    LLM_BASE_URL = os.environ.get("LLM_SERVER_URL", "http://100.64.122.97:8080/v1")
+    LLM_DEFAULT_MODEL = os.environ.get("LLM_DEFAULT_MODEL", "Qwen/Qwen3-8B-AWQ")
+    LLM_TIMEOUT = int(os.environ.get("LLM_TIMEOUT", "120"))
+    LLM_MAX_TOKENS = int(os.environ.get("LLM_MAX_TOKENS", "2000"))
+    LLM_TEMPERATURE = float(os.environ.get("LLM_TEMPERATURE", 0.7))
+    LLM_ENABLE_TOOLS = os.environ.get("LLM_ENABLE_TOOLS", "true").lower() == "true"

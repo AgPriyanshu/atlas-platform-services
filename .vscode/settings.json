@@ -1,6 +1,7 @@
 {
   "python.analysis.autoImportCompletions": true,
   "python.analysis.indexing": true,
+
   "python.analysis.packageIndexDepths": [
     {
       "name": "django",
@@ -13,5 +14,19 @@
       "includeAllSymbols": true
     }
   ],
-  "postman.settings.dotenv-detection-notification-visibility": false
+
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit",
+      "source.fixAll": "explicit"
+    }
+  },
+
+  "ruff.organizeImports": true,
+
+  "postman.settings.dotenv-detection-notification-visibility": false,
+
+  "cSpell.words": ["checkpointer"]
 }

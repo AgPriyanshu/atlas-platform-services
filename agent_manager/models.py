@@ -3,6 +3,8 @@ from django.db import models
 from shared.models import BaseModel
 from shared.models.base_models import BaseModelWithoutUser
 
+from .constants import MessageRole, MessageStatus
+
 
 class LLM(BaseModelWithoutUser):
     name = models.TextField(verbose_name="Name")
@@ -27,17 +29,6 @@ class ChatSession(BaseModel):
     class Meta:
         verbose_name = "Chat session"
         verbose_name_plural = "Chat sessions"
-
-
-class MessageRole(models.TextChoices):
-    USER = "user", "User"
-    ASSISTANT = "assistant", "Assistant"
-
-
-class MessageStatus(models.TextChoices):
-    PENDING = "pending", "Pending"
-    COMPLETE = "complete", "Complete"
-    FAILED = "failed", "Failed"
 
 
 class Message(BaseModel):
