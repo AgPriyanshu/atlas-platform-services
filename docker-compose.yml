@@ -12,7 +12,6 @@ services:
           memory: 1g
     volumes:
       - .:/app
-      - ./requirements.txt:/app/requirements.txt
     ports:
       - "8000:8000"
     depends_on:

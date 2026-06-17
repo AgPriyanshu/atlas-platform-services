@@ -3,6 +3,13 @@ FROM python:3.12-slim-bookworm AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=never \
+    UV_PROJECT_ENVIRONMENT=/opt/venv
+
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
@@ -18,16 +25,14 @@ RUN set -eux; \
 
 WORKDIR /app
 
-COPY requirements.txt ./
+COPY pyproject.toml uv.lock ./
 
-RUN --mount=type=cache,target=/root/.cache/pip \
+RUN --mount=type=cache,target=/root/.cache/uv \
     set -eux; \
-    python -m venv /opt/venv; \
-    /opt/venv/bin/pip install --upgrade pip setuptools wheel; \
-    /opt/venv/bin/pip install -r requirements.txt; \
+    uv sync --frozen; \
     if command -v gdal-config >/dev/null 2>&1; then \
         GDAL_VERSION=$(gdal-config --version); \
-        /opt/venv/bin/pip install "GDAL==${GDAL_VERSION}" || true; \
+        uv pip install --python /opt/venv/bin/python "GDAL==${GDAL_VERSION}" || true; \
     fi
 
 # ---- runtime: lean image without build tools ----

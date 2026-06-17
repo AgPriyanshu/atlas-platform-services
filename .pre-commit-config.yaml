@@ -65,3 +65,4 @@ repos:
       - id: check-merge-conflict
       # prevent giant files from being committed
       - id: check-added-large-files
+        exclude: ^uv\.lock$

@@ -41,8 +41,11 @@ When creating a new endpoint or updating an existing endpoint:
 
 ## Python Package Management
 
-- **Do not use local Python** for package management.
-- To add a new pip package:
-  1. Install the package inside the Docker Compose container: `docker compose exec web pip install <package-name>`
-  2. Check the installed version: `docker compose exec web pip show <package-name>`
-  3. Update `requirements.txt` with the exact version installed in the container.
+- This project uses **uv** for all dependency management.
+- Dependencies are declared in `pyproject.toml` and locked in `uv.lock`.
+- **Do not edit `uv.lock` by hand** and do not use pip directly.
+- To add a new package:
+  1. Add it to the `dependencies` list in `pyproject.toml`.
+  2. Run `uv lock` locally to update `uv.lock`.
+  3. Rebuild the Docker image: `docker compose up --build`.
+- To remove a package: remove it from `pyproject.toml`, then run `uv lock`.
