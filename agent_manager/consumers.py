@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+from contextlib import AsyncExitStack
 from typing import Any, TypedDict, cast
 from uuid import UUID
 
@@ -16,9 +17,9 @@ from pydantic import SecretStr
 from agent_manager.schemas import OutgoingMessage
 from backend_projects.env_variables import EnvVariable
 
-from .agents.agent import AgentFactory
+from .agents.agent_factory import AgentFactory
 from .agents.llm import LLMConfig
-from .agents.schemas import GlobalMessageState, Node
+from .agents.schemas import GlobalMessageState
 from .constants import CHUNK_SAVE_INTERVAL, GRAPH_TURN_TIMEOUT, MAX_MESSAGE_LENGTH, Role
 from .db import get_postgres_checkpointer
 from .helpers import parse_incoming_message
@@ -67,7 +68,32 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
+        self._exit_stack = AsyncExitStack()
+
+        try:
+            checkpointer = await self._exit_stack.enter_async_context(
+                get_postgres_checkpointer()
+            )
+            llm_config = LLMConfig(
+                model=EnvVariable.LLM_DEFAULT_MODEL.value,
+                base_url=EnvVariable.LLM_BASE_URL.value,
+                api_key=SecretStr("not-needed"),
+                timeout=EnvVariable.LLM_TIMEOUT.value,
+                temperature=EnvVariable.LLM_TEMPERATURE.value,
+            )
+            self._agent = AgentFactory(llm_config).build_agent(checkpointer)
+        except Exception:
+            logger.exception(
+                "Failed to initialise agent for session %s", self.session_id
+            )
+            await self._exit_stack.aclose()
+            await self.close(code=4500)
+            return
+
     async def disconnect(self, _close_code):
+        if hasattr(self, "_exit_stack"):
+            await self._exit_stack.aclose()
+
         if hasattr(self, "session_id"):
             await sync_to_async(cache.delete)(f"agent:lock:{self.session_id}")
 
@@ -180,17 +206,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message: str,
         agent_message_id,
     ) -> tuple[str, dict | None]:
-        llm_config = LLMConfig(
-            model=EnvVariable.LLM_DEFAULT_MODEL.value,
-            base_url=EnvVariable.LLM_BASE_URL.value,
-            api_key=SecretStr("not-needed"),
-            timeout=EnvVariable.LLM_TIMEOUT.value,
-            temperature=EnvVariable.LLM_TEMPERATURE.value,
-        )
-
-        async with get_postgres_checkpointer() as checkpointer:
-            agent = AgentFactory(llm_config).build_agent(checkpointer)
-            return await self._stream_graph(agent, message, agent_message_id)
+        return await self._stream_graph(self._agent, message, agent_message_id)
 
     async def _stream_graph(
         self,
@@ -220,45 +236,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
         chunk_count = 0
 
         try:
-            async for mode, data in agent.astream(
-                inputs, config=config, stream_mode=["messages", "updates"]
-            ):
-                if mode == "updates":
-                    for node_name, node_output in data.items():
-                        if not isinstance(node_output, dict):
-                            continue
-
-                        if node_name == Node.RESPONDER and node_output.get(
-                            "final_response"
-                        ):
-                            static_content = node_output["final_response"]
-                            last_ui_action = node_output["ui_action"]
-                            full_content += static_content
-
-                            await self._send_message(
-                                message_id=str(agent_message_id),
-                                role=Role.ASSISTANT,
-                                content=static_content,
-                                is_chunk=True,
-                            )
-
-                    continue
-
-                chunk, metadata = data
-
-                if metadata.get("langgraph_node") != Node.RESPONDER:
-                    continue
-
-                chunk_content = chunk.content if hasattr(chunk, "content") else None
-
-                if not chunk_content:
-                    continue
-
-                if not isinstance(chunk_content, str):
-                    chunk_content = str(chunk_content)
-
+            async for chunk_content, ui_action in agent.astream(inputs, config):
                 full_content += chunk_content
                 chunk_count += 1
+
+                if ui_action is not None:
+                    last_ui_action = ui_action
 
                 await self._send_message(
                     message_id=str(agent_message_id),

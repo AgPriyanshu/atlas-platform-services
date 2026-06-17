@@ -1,5 +1,3 @@
-"""Celery tasks for the agent_manager module."""
-
 import logging
 from datetime import timedelta
 
