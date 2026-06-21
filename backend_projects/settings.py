@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "web_gis_app.apps.WebGisAppConfig",
     "agent_manager.apps.AgentManagerConfig",
     "level_up_app.apps.LevelUpAppConfig",
+    "workload_app.apps.WorkloadAppConfig",
 ]
 
 MIDDLEWARE = [
