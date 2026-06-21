@@ -42,7 +42,7 @@ dependencies = [
     "langgraph>=1.2",
     "langgraph-checkpoint-postgres>=3.1",
     "langgraph-prebuilt>=1.1",
-    "langsmith>=0.8",
+    "langsmith>=0.8.18",
     "openai>=2.42",
     "ollama>=0.6",
     # Storage
@@ -62,6 +62,7 @@ dependencies = [
     "httpx>=0.28",
     "pydantic>=2.13",
     # Utilities
+    "msgpack>=1.2.1",
     "PyYAML>=6.0",
     "pytz>=2026.2",
     "tzlocal>=5.4",
