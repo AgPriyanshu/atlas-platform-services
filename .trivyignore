@@ -1,0 +1,4 @@
+# CVE-2025-3000 / GHSA-rrmf-rvhw-rf47
+# torch.jit.script memory corruption — no upstream fix available in torch 2.x.
+# Tracked upstream: https://github.com/pytorch/pytorch/issues/CVE-2025-3000
+CVE-2025-3000

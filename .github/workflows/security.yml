@@ -31,7 +31,7 @@ jobs:
         run: uv export --no-hashes -o /tmp/requirements.txt
 
       - name: Run pip-audit
-        uses: pypa/gh-action-pip-audit@v1
+        uses: pypa/gh-action-pip-audit@v1.1.0
         with:
           inputs: /tmp/requirements.txt
           # Known unfixed: CVE-2025-3000 (torch — no patch available upstream).
@@ -49,11 +49,9 @@ jobs:
         with:
           # Scan all Python source excluding migrations, tests, and third-party stubs.
           targets: "."
-          excluded_paths: "*/migrations/*,*/tests/*"
-          configfile: ""
-          level: high
+          exclude: "*/migrations/*,*/tests/*"
+          severity: high
           confidence: high
-          exit_zero: false
 
   trivy-filesystem:
     name: Container / Filesystem Scan (Trivy)
@@ -70,8 +68,9 @@ jobs:
           format: sarif
           output: trivy-fs.sarif
           severity: HIGH,CRITICAL
-          # Ignore the unfixed torch CVE.
+          # Ignore the unfixed torch CVE (see .trivyignore).
           ignore-unfixed: false
+          trivyignores: .trivyignore
           exit-code: "1"
 
       - name: Upload Trivy SARIF to GitHub Security tab
@@ -111,6 +110,7 @@ jobs:
           output: trivy-image.sarif
           severity: HIGH,CRITICAL
           ignore-unfixed: false
+          trivyignores: .trivyignore
           exit-code: "1"
 
       - name: Upload Trivy SARIF to GitHub Security tab
