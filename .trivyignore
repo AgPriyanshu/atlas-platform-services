@@ -2,3 +2,11 @@
 # torch.jit.script memory corruption — no upstream fix available in torch 2.x.
 # Tracked upstream: https://github.com/pytorch/pytorch/issues/CVE-2025-3000
 CVE-2025-3000
+
+# CVE-2026-8087, CVE-2026-8088 / OSGeo GDAL
+# Vulnerabilities in GDAL through 3.13.0dev-4.
+# Debian Bookworm ships libgdal 3.6.2 and no patched package is available in the
+# Bookworm repos. The Python GDAL bindings must match the system library version
+# exactly, so upgrading the Python package alone is not viable.
+CVE-2026-8087
+CVE-2026-8088

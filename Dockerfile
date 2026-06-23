@@ -58,6 +58,7 @@ RUN set -eux; \
         spatialite-bin \
     ; \
     rm -rf /var/lib/apt/lists/*; \
+    pip install --upgrade pip; \
     groupadd --gid 1001 appgroup; \
     useradd --uid 1001 --gid appgroup --no-create-home --shell /bin/bash appuser
 
