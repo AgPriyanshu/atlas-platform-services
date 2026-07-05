@@ -1,0 +1,17 @@
+[project]
+name = "atlas-sandbox"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "numpy>=2.0",
+    "pandas>=2.2",
+    "shapely>=2.0",
+    "rasterio>=1.4",
+    "geopandas>=1.0",
+    "pyproj>=3.7",
+]
+
+[tool.uv]
+package = false
