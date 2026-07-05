@@ -20,3 +20,9 @@ class OutgoingMessage(BaseModel):
     role: Role
     isChunk: bool
     ui_action: Optional[UIAction] = None
+
+
+class AgentStatusMessage(BaseModel):
+    type: str = "agent_status"
+    session_id: str
+    status: str

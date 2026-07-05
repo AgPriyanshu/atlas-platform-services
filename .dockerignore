@@ -77,3 +77,4 @@ test_*.py
 .coverage*
 pytest.ini
 tox.ini
+data

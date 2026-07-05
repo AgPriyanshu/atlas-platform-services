@@ -1,0 +1,13 @@
+FROM postgis/postgis:17-3.6-alpine
+
+RUN apk add --no-cache \
+    postgresql17-dev \
+    build-base \
+    clang19 \
+    llvm19 \
+    git \
+    && git clone --branch v0.8.0 --depth 1 https://github.com/pgvector/pgvector.git /tmp/pgvector \
+    && cd /tmp/pgvector \
+    && make \
+    && make install \
+    && rm -rf /tmp/pgvector

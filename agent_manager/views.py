@@ -33,7 +33,7 @@ class MessageViewSet(BaseModelViewSet):
         if session_id:
             qs = qs.filter(session_id=session_id)
 
-        return qs.order_by("created_at")
+        return qs.exclude(content="").order_by("created_at")
 
     @action(detail=False, methods=["get"], url_path="last")
     def last_message(self, request):

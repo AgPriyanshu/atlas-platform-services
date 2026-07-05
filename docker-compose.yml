@@ -18,7 +18,7 @@ services:
       db:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
     env_file: ./.env
 
   # beat:
@@ -55,10 +55,14 @@ services:
       db:
         condition: service_healthy
     env_file: ./.env
+    environment:
+      HF_HOME: /tmp/hf-cache
 
   db:
     platform: linux/amd64
-    image: postgis/postgis:17-3.6-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.db
     deploy:
       resources:
         limits:
@@ -93,6 +97,35 @@ services:
       - "6379:6379"
     volumes:
       - ./data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  sandbox:
+    build:
+      context: ./sandbox
+      dockerfile: Dockerfile
+    image: atlas-sandbox:latest
+    container_name: sandbox
+    user: "0"
+    environment:
+      - SANDBOX_OUTPUT_VOLUME=${COMPOSE_PROJECT_NAME:-atlas-platform-services}_sandbox_outputs
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - sandbox_outputs:/sandbox_outputs
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256m
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   seaweedfs:
     image: chrislusf/seaweedfs:latest
@@ -157,3 +190,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
+volumes:
+  sandbox_outputs:

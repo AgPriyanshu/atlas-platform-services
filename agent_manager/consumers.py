@@ -14,11 +14,12 @@ from langchain.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 from pydantic import SecretStr
 
-from agent_manager.schemas import OutgoingMessage
+from agent_manager.schemas import AgentStatusMessage, OutgoingMessage
 from backend_projects.env_variables import EnvVariable
 
 from .agents.agent_factory import AgentFactory
 from .agents.llm import LLMConfig
+from .agents.message_helpers import should_compact
 from .agents.schemas import GlobalMessageState
 from .constants import CHUNK_SAVE_INTERVAL, GRAPH_TURN_TIMEOUT, MAX_MESSAGE_LENGTH, Role
 from .db import get_postgres_checkpointer
@@ -227,9 +228,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
             RunnableConfig,
             {
                 "configurable": {"thread_id": self.session_id},
-                "recursion_limit": 10,
+                "recursion_limit": 25,
             },
         )
+
+        try:
+            current_state = await agent.graph.aget_state(config)
+
+            if current_state and should_compact(current_state.values.get("messages", [])):
+                await self._send_status("compacting")
+        except Exception:
+            pass
 
         full_content = ""
         last_ui_action = None
@@ -287,6 +296,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 role=role,
                 isChunk=is_chunk,
                 ui_action=ui_action,
+            ).model_dump_json()
+        )
+
+    async def _send_status(self, status: str):
+        await self.send(
+            text_data=AgentStatusMessage(
+                session_id=self.session_id,
+                status=status,
             ).model_dump_json()
         )
 

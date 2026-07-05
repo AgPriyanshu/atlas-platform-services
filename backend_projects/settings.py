@@ -22,10 +22,12 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [
-                (
-                    os.environ.get("REDIS_HOST", "redis"),
-                    int(os.environ.get("REDIS_PORT", "6379")),
-                )
+                {
+                    "host": os.environ.get("REDIS_HOST", "redis"),
+                    "port": int(os.environ.get("REDIS_PORT", "6379")),
+                    "socket_timeout": 30,
+                    "socket_connect_timeout": 5,
+                }
             ],
             "symmetric_encryption_keys": [SECRET_KEY],
         },
@@ -194,6 +196,7 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
+CELERY_IMPORTS = ["shared.rag.tasks"]
 CELERY_BEAT_SCHEDULE = {
     "cleanup-stale-pending-messages": {
         "task": "agent_manager.tasks.cleanup_stale_pending_messages",
