@@ -11,7 +11,7 @@ def retrieve_chunks(query: str, user, top_k: int = 5):
     )
     vec = embeddings.embed_query(query)
 
-    return (
+    return list(
         DocumentChunk.objects.filter(
             document__user=user,
             document__status=DocumentStatus.READY,
