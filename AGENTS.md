@@ -62,7 +62,7 @@ Defined in `backend_projects/urls.py`:
 |--------|-----|
 | `/auth/` | auth_app |
 | `/ai/` | agent_manager (REST) |
-| `/ws/ai/<session_id>/` | agent_manager (WebSocket) |
+| `/ws/ai/sessions/<session_id>/` | agent_manager (WebSocket) |
 | `/web-gis/` | web_gis_app |
 | `/events/` | shared SSE endpoint |
 | `/tasks/` | workload_app |

@@ -1,9 +1,10 @@
+import operator
 from enum import StrEnum
 from typing import Annotated, Any, NotRequired, Optional, TypedDict
 
 from langchain.messages import AnyMessage
 from langgraph.graph.message import add_messages
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from agent_manager.agents.constants import UIActionType, UIApps
 
@@ -33,18 +34,6 @@ class UIActionDecision(BaseModel):
     to: UIApps
 
 
-class RoutingDecision(BaseModel):
-    next_node: str | None
-
-    @field_validator("next_node")
-    @classmethod
-    def normalize_next_node(cls, v: str | None) -> str | None:
-        if isinstance(v, str) and v.lower() in ("null", "none", "end"):
-            return None
-
-        return v
-
-
 class Node(StrEnum):
     COMPACTION = "compaction"
     ORCHESTRATOR = "orchestrator"
@@ -54,6 +43,42 @@ class Node(StrEnum):
     CRITIC = "critic"
     # MAP_ZOOM_TO = "map_zoom_to"
     # OPEN_PROCESSING_TOOL = "open_processing_tool"
+
+
+ROUTABLE_NODES = {Node.WEB_GIS_EXPERT.value, Node.UI_EXPERT.value}
+
+
+class RoutingDecision(BaseModel):
+    next_nodes: list[Node] = Field(default_factory=list)
+
+    @field_validator("next_nodes", mode="before")
+    @classmethod
+    def normalize_next_nodes(cls, v: Any) -> list[str]:
+        if v is None:
+            return []
+
+        if isinstance(v, str):
+            v = [v]
+
+        seen: set[str] = set()
+        normalized: list[str] = []
+
+        for item in v:
+            if not isinstance(item, str):
+                continue
+
+            candidate = item.strip().lower()
+
+            if candidate in ("", "null", "none", "end"):
+                continue
+
+            if candidate not in ROUTABLE_NODES or candidate in seen:
+                continue
+
+            seen.add(candidate)
+            normalized.append(candidate)
+
+        return normalized
 
 
 class LoadedLayer(TypedDict):
@@ -76,8 +101,8 @@ class CritiqueDecision(BaseModel):
 class GlobalMessageState(BaseModel):
     session_id: str
     messages: Annotated[list[AnyMessage], add_messages]
-    prev_node: Optional[str] = None
-    next_node: Optional[str] = None
+    prev_node: Annotated[list[str], operator.add] = Field(default_factory=list)
+    next_nodes: list[str] = Field(default_factory=list)
     final_response: str | list[str | dict]
     ui_action: Optional[UIAction] = None
     loop_iteration: int = 0
