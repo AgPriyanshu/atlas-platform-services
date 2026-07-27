@@ -146,6 +146,21 @@ import json
 send_notification(content=json.dumps({"type": "agent_layer_created", "layerId": str(layer.id), ...}), user=user)
 ```
 
+## Web GIS Processing Pipeline (Operations / Workflows / Tool Registry)
+
+Geoprocessing tools (buffer, clip, reproject, etc.) run through a shared operation/workflow abstraction — the extension point for any future multi-step/DAG workflow builder.
+
+- `shared/workflows/base/base_operation.py::Operation[PayloadT, OutputT]` — generic ABC. Subclasses fix concrete `Operation[PydanticModel, OutputType]` types (enforced via `__init_subclass__`). Exposes `self.payload`, `self.outputs` (dict of prior operations' outputs keyed by name), `self.ctx` (shared mutable dict, carries `progress_reporter`), abstract `execute()`.
+- `shared/workflows/base/base_workflow.py::Workflow` — holds a static `operations = (OpA, OpB, ...)` tuple, executed strictly in order. `_run_operations()` auto-pipes the previous operation's raw output into the next operation's payload unless an explicit payload was given, and validates each payload against the operation's Pydantic model. **This is a linear chain only — no branching, no fan-in/fan-out, no user-defined graph.** A DAG-based workflow builder needs to generalize this (arbitrary node→node edges, multiple named inputs) rather than reuse it as-is.
+- `web_gis_app/tool_registry.py` — maps `tool_name` → concrete `Workflow` subclass + Pydantic parameter model; `list_tools()` feeds `GET /web-gis/processing/tools/` (frontend node/form metadata).
+- Vector operations (`web_gis_app/workflows/vector_workflows/vector_operations.py`) run as raw parameterized SQL directly against the `Feature` table (`ST_Buffer` with geography cast, `ST_Intersection`, `ST_Union`, `ST_Simplify`, `ST_Centroid`, `ST_ConvexHull`, `ST_Extent`/`ST_Transform`) — no GeoPandas/Fiona.
+- Raster operations (`web_gis_app/workflows/raster_workflows/raster_operations.py`) go Download → `<Op>` (rasterio/rio-cogeo, e.g. `warp.reproject`, `mask.mask`) → optionally `ExtractRasterMetadata` → Upload → `CreateOutputDataset`.
+- `ProcessingJob` model (one tool per job today) → Celery `run_processing_tool(job_id)` task (`web_gis_app/tasks.py`) resolves the tool from the registry, builds the workflow payload, executes it, updates job status/progress.
+- `web_gis_app/progress.py::ProgressReporter` — throttles progress updates to every 5%, writes `ProcessingJob.progress` directly (no signal re-trigger), and calls `send_notification(...)` so progress streams to the browser via the same Redis pub/sub → SSE path used elsewhere.
+- `ProcessingJobCreateSerializer` (plain DRF `Serializer`, not model-bound) validates `tool_name` against the registry and `parameters` against the tool's Pydantic model — reusable pattern for validating any future per-node parameter schema.
+- `DatasetNode`/`DatasetClosure` (`web_gis_app/models/dataset_models.py`) implement a closure-table pattern (ancestor/descendant/depth rows, maintained via signals) for the arbitrary-depth dataset folder tree — a reference pattern if a future workflow needs nested/grouped nodes, though a plain edges table is the better fit for a linear/DAG executor.
+- `agent_manager`'s `open_processing_tool` LangChain tool currently means "invoke one registered tool," not "run a multi-step workflow" — there is no generic DAG/pipeline concept anywhere in the codebase today (grepped for "workflow"/"pipeline"/"DAG"/"task graph").
+
 ## Sandbox Service
 
 The `sandbox` Docker Compose service provides isolated GIS code execution:

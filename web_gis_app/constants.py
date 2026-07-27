@@ -69,3 +69,24 @@ class ProcessingTool(TextChoices):
 class ProcessingToolCategory(TextChoices):
     RASTER = "raster"
     VECTOR = "vector"
+
+
+class WorkflowRunStatus(TextChoices):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class WorkflowNodeStatus(TextChoices):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    SKIPPED = "skipped"
+
+
+class WorkflowNodeType(TextChoices):
+    SOURCE = "source"
+    OPERATION = "operation"
