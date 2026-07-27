@@ -6,6 +6,7 @@ from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import RemoveMessage, SystemMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
+from langgraph.types import Overwrite
 from pydantic import ValidationError
 
 from agent_manager.agents.helpers import create_path_map
@@ -40,14 +41,9 @@ class AgentFactory:
             llm_config, temperature=None
         )
 
-    def graph_router(self, state: GlobalMessageState) -> str:
-        next_node = state.next_node
-
-        if next_node == Node.WEB_GIS_EXPERT:
-            return Node.WEB_GIS_EXPERT
-
-        if next_node == Node.UI_EXPERT:
-            return Node.UI_EXPERT
+    def graph_router(self, state: GlobalMessageState) -> str | list[str]:
+        if state.next_nodes:
+            return list(state.next_nodes)
 
         return Node.RESPONDER
 
@@ -107,11 +103,11 @@ class AgentFactory:
             )
 
         except (ValidationError, OutputParserException, Exception):
-            decision = RoutingDecision(next_node=None)
+            decision = RoutingDecision()
 
         return {
-            "prev_node": Node.ORCHESTRATOR,
-            "next_node": decision.next_node,
+            "prev_node": Overwrite([Node.ORCHESTRATOR]),
+            "next_nodes": decision.next_nodes,
             "final_response": "",
         }
 
@@ -137,6 +133,12 @@ class AgentFactory:
             tool_call_iterations += 1
 
             for tool_call in response.tool_calls:
+                logger.info(
+                    "web_gis_expert_node calling tool %r with args %r",
+                    tool_call["name"],
+                    tool_call["args"],
+                )
+
                 if tool_call["name"] == "create_gis_layer":
                     result = await create_gis_layer.ainvoke(
                         {**tool_call["args"], "state": state.model_dump()}, config
@@ -154,8 +156,7 @@ class AgentFactory:
                 new_messages.append(tool_message)
 
         return {
-            "prev_node": Node.WEB_GIS_EXPERT,
-            "next_node": Node.RESPONDER,
+            "prev_node": [Node.WEB_GIS_EXPERT],
             "messages": new_messages,
         }
 
@@ -180,8 +181,7 @@ class AgentFactory:
             ui_action = None
 
         return {
-            "prev_node": Node.UI_EXPERT,
-            "next_node": Node.RESPONDER,
+            "prev_node": [Node.UI_EXPERT],
             "ui_action": ui_action,
         }
 
@@ -190,19 +190,21 @@ class AgentFactory:
         llm_config = dataclasses.replace(self.llm_base_config, temperature=0.6)
         llm = LLMFactory.create_llm(llm_config)
 
-        if state.prev_node == Node.UI_EXPERT:
+        web_gis_ran = Node.WEB_GIS_EXPERT in state.prev_node
+        ui_ran = Node.UI_EXPERT in state.prev_node
+
+        def nav_sentence() -> str:
             app = (
                 state.ui_action.payload.get("to", "the app")
                 if state.ui_action
                 else "the app"
             )
-            content = f"Navigating to {app}."
+            return f"Navigating to {app}."
+
+        if ui_ran and not web_gis_ran:
+            content = nav_sentence()
         else:
-            prompt = (
-                verifier_prompt
-                if state.prev_node == Node.WEB_GIS_EXPERT
-                else responder_prompt
-            )
+            prompt = verifier_prompt if web_gis_ran else responder_prompt
             response = await (prompt | llm).ainvoke({"messages": messages}, config)
             content = (
                 response.content
@@ -210,9 +212,11 @@ class AgentFactory:
                 else str(response.content)
             )
 
+            if ui_ran:
+                content = f"{content}\n\n{nav_sentence()}"
+
         return {
-            "prev_node": Node.RESPONDER,
-            "next_node": None,
+            "prev_node": [Node.RESPONDER],
             "final_response": content,
         }
 

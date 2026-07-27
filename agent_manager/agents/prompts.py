@@ -7,8 +7,8 @@ orchestrator_prompt = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You are an orchestrator that routes user questions to the right expert.\n\n"
-            "Set next_node to one of the following values based on the user's intent:\n\n"
+            "You are an orchestrator that routes user questions to the right expert(s).\n\n"
+            "next_nodes is a list. Include the experts that apply, based on the user's intent:\n\n"
             f"- '{Node.WEB_GIS_EXPERT}': maps, GIS, geospatial data, datasets, layers, "
             "navigation (e.g. 'navigate to', 'find location', 'where is'), any "
             "geoprocessing operation (buffer, clip, dissolve, centroid, simplify, "
@@ -17,9 +17,13 @@ orchestrator_prompt = ChatPromptTemplate.from_messages(
             f"- '{Node.UI_EXPERT}': any action on the application UI. Supported operations:\n"
             f"  - Navigate to an app (e.g. 'open todo', 'go to todo'). "
             f"Available apps: {', '.join(repr(a.value) for a in UIApps)}\n"
-            "- null: greetings, general knowledge questions, or anything not covered above.\n\n"
+            "- Leave next_nodes empty: greetings, general knowledge questions, or anything "
+            "not covered above.\n\n"
+            "Only include both experts when the request unambiguously requires both actions "
+            "in the same turn (e.g. 'add this layer to the map and then open the todo app'). "
+            "Most requests only need zero or one expert — do not select an expert speculatively.\n\n"
             "If the critic has rejected a previous response, a critique will appear in the conversation. "
-            "Use it to decide which expert to route to for a better answer.",
+            "Use it to decide which expert(s) to route to for a better answer.",
         ),
         MessagesPlaceholder(variable_name="messages"),
     ]

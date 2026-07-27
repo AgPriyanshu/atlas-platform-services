@@ -93,9 +93,8 @@ CORS_ALLOWED_ORIGINS = (
     if _cors_origins_env
     else [
         "http://localhost:3000",  # React dev
+        "http://100.64.122.97:3000",  # React dev
         "http://127.0.0.1:3000",
-        "http://localhost:5173",  # Vite dev
-        "http://127.0.0.1:5173",
         "https://worldofapps.bar",
         "https://app.worldofapps.bar",
         "https://api.worldofapps.bar",
@@ -324,6 +323,11 @@ LOGGING = {
         "agent_manager": {
             "handlers": ["console"],
             "level": "DEBUG",
+            "propagate": False,
+        },
+        "watchfiles": {
+            "handlers": ["console"],
+            "level": "WARNING",
             "propagate": False,
         },
     },

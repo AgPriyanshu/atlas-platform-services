@@ -218,8 +218,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         inputs = GlobalMessageState(
             session_id=self.session_id,
             messages=[HumanMessage(content=message)],
-            prev_node=None,
-            next_node=None,
             final_response="",
             ui_action=None,
         )
