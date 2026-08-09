@@ -13,7 +13,6 @@ class LoadResult:
 
 
 def compute_load(employee) -> LoadResult:
-    """Compute load status for an employee based on active work-item count vs capacity."""
     active_count = employee.work_items.exclude(status="DONE").count()
     capacity = max(employee.capacity, 1)
     ratio = active_count / capacity

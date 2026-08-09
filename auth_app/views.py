@@ -48,7 +48,6 @@ class AuthViewSet(ViewSet):
         url_name="register",
     )
     def register(self, request):
-        print("register")
         request_body = request.data.copy()
         serializer = AuthSerializer(data=request_body)
         serializer.is_valid(raise_exception=True)

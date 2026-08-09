@@ -48,6 +48,7 @@ dependencies = [
     "langgraph-checkpoint-postgres>=3.1",
     "langgraph-prebuilt>=1.1",
     "langsmith>=0.8.18",
+    "langfuse>=4.14.3",
     "openai>=2.42",
     "ollama>=0.6",
     # Storage

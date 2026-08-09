@@ -15,7 +15,7 @@ from agent_manager.constants import MAX_LOOP_ITERATIONS
 from .agent import Agent
 from .llm import LLMConfig, LLMFactory
 from .message_helpers import get_messages_to_summarize, should_compact, trim_messages
-from .prompts import (  # critic_prompt,
+from .prompts import (
     orchestrator_prompt,
     responder_prompt,
     summarizer_prompt,
@@ -23,7 +23,7 @@ from .prompts import (  # critic_prompt,
     verifier_prompt,
     web_gis_prompt,
 )
-from .schemas import (  # CritiqueDecision,
+from .schemas import (
     GlobalMessageState,
     Node,
     RoutingDecision,
@@ -46,12 +46,6 @@ class AgentFactory:
             return list(state.next_nodes)
 
         return Node.RESPONDER
-
-    # def critic_router(self, state: GlobalMessageState) -> str:
-    #     if state.critique_approved:
-    #         return END
-    #
-    #     return Node.ORCHESTRATOR
 
     async def compaction_node(self, state: GlobalMessageState, config: RunnableConfig):
         if not should_compact(state.messages):
@@ -88,7 +82,9 @@ class AgentFactory:
 
         return {"messages": removals, "conversation_summary": summary}
 
-    async def orchestrator_node(self, state: GlobalMessageState, config: RunnableConfig):
+    async def orchestrator_node(
+        self, state: GlobalMessageState, config: RunnableConfig
+    ):
         messages = trim_messages(state.messages, state.conversation_summary)
         llm_config = dataclasses.replace(self.llm_base_config, temperature=0.1)
         llm = LLMFactory.create_llm(llm_config)
@@ -111,11 +107,15 @@ class AgentFactory:
             "final_response": "",
         }
 
-    async def web_gis_expert_node(self, state: GlobalMessageState, config: RunnableConfig):
+    async def web_gis_expert_node(
+        self, state: GlobalMessageState, config: RunnableConfig
+    ):
         messages = list(trim_messages(state.messages, state.conversation_summary))
         llm_config = dataclasses.replace(self.llm_base_config, temperature=0.6)
         llm = LLMFactory.create_llm(llm_config)
-        llm_with_tools = llm.bind_tools([run_python, create_gis_layer, retrieve_from_documents])
+        llm_with_tools = llm.bind_tools(
+            [run_python, create_gis_layer, retrieve_from_documents]
+        )
         new_messages = []
 
         tool_call_iterations = 0
@@ -149,9 +149,7 @@ class AgentFactory:
                     )
                 else:
                     result = await run_python.ainvoke(tool_call["args"], config)
-                tool_message = ToolMessage(
-                    content=result, tool_call_id=tool_call["id"]
-                )
+                tool_message = ToolMessage(content=result, tool_call_id=tool_call["id"])
                 messages.append(tool_message)
                 new_messages.append(tool_message)
 
@@ -219,41 +217,6 @@ class AgentFactory:
             "prev_node": [Node.RESPONDER],
             "final_response": content,
         }
-
-    # async def critic_node(self, state: GlobalMessageState, config: RunnableConfig):
-    #     if state.loop_iteration >= MAX_LOOP_ITERATIONS:
-    #         return {
-    #             "prev_node": Node.CRITIC,
-    #             "critique_approved": True,
-    #             "critique": "",
-    #         }
-    #
-    #     messages = trim_messages(state.messages, state.conversation_summary)
-    #     llm_config = dataclasses.replace(self.llm_base_config, temperature=0.1)
-    #     llm = LLMFactory.create_llm(llm_config)
-    #     chain = critic_prompt | llm.with_structured_output(CritiqueDecision)
-    #
-    #     try:
-    #         decision = cast(
-    #             CritiqueDecision,
-    #             await chain.ainvoke(
-    #                 {
-    #                     "messages": messages,
-    #                     "draft_response": state.final_response,
-    #                 },
-    #                 config,
-    #             ),
-    #         )
-    #
-    #     except (ValidationError, OutputParserException, Exception):
-    #         decision = CritiqueDecision(approved=True, critique="")
-    #
-    #     return {
-    #         "prev_node": Node.CRITIC,
-    #         "critique": decision.critique,
-    #         "critique_approved": decision.approved,
-    #         "loop_iteration": state.loop_iteration + 1,
-    #     }
 
     def build_agent(self, checkpointer) -> Agent:
         graph_builder = StateGraph(GlobalMessageState)

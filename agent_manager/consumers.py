@@ -21,6 +21,7 @@ from .agents.agent_factory import AgentFactory
 from .agents.llm import LLMConfig
 from .agents.message_helpers import should_compact
 from .agents.schemas import GlobalMessageState
+from .agents.tracing import trace_config
 from .constants import CHUNK_SAVE_INTERVAL, GRAPH_TURN_TIMEOUT, MAX_MESSAGE_LENGTH, Role
 from .db import get_postgres_checkpointer
 from .helpers import parse_incoming_message
@@ -75,6 +76,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             checkpointer = await self._exit_stack.enter_async_context(
                 get_postgres_checkpointer()
             )
+
             llm_config = LLMConfig(
                 model=EnvVariable.LLM_DEFAULT_MODEL.value,
                 base_url=EnvVariable.LLM_BASE_URL.value,
@@ -83,12 +85,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 temperature=EnvVariable.LLM_TEMPERATURE.value,
             )
             self._agent = AgentFactory(llm_config).build_agent(checkpointer)
+
         except Exception:
             logger.exception(
                 "Failed to initialise agent for session %s", self.session_id
             )
             await self._exit_stack.aclose()
             await self.close(code=4500)
+
             return
 
     async def disconnect(self, _close_code):
@@ -227,13 +231,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
             {
                 "configurable": {"thread_id": self.session_id},
                 "recursion_limit": 25,
+                **trace_config(self.session_id, str(self.user.id)),
             },
         )
 
         try:
             current_state = await agent.graph.aget_state(config)
 
-            if current_state and should_compact(current_state.values.get("messages", [])):
+            if current_state and should_compact(
+                current_state.values.get("messages", [])
+            ):
                 await self._send_status("compacting")
         except Exception:
             pass

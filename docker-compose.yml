@@ -74,6 +74,8 @@ services:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      HF_HOME: /tmp/hf-cache
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -84,6 +86,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 5s
+
 
   redis:
     image: redis:latest
@@ -123,6 +126,7 @@ services:
           cpus: "0.5"
           memory: 256m
     restart: unless-stopped
+    profiles: [web-gis]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
       interval: 30s

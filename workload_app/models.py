@@ -3,10 +3,10 @@ from django.db import models
 
 from shared.models.base_models import BaseModel
 
+from .constants import WorkItemStatus
+
 
 class Employee(BaseModel):
-    """Represents a person in the org hierarchy. user = chart owner (via BaseModel)."""
-
     name = models.CharField(max_length=255)
     email = models.EmailField(blank=True)
     designation = models.CharField(max_length=255)
@@ -33,20 +33,7 @@ class Employee(BaseModel):
         return f"{self.name} ({self.designation})"
 
 
-class WorkItemStatus(models.TextChoices):
-    TODO = "TODO", "Todo"
-    IN_PROGRESS = "IN_PROGRESS", "In Progress"
-    DONE = "DONE", "Done"
-
-
-class WorkItemSource(models.TextChoices):
-    MANUAL = "MANUAL", "Manual"
-    JIRA = "JIRA", "Jira"
-
-
 class WorkItem(models.Model):
-    """A unit of work assigned to an employee."""
-
     employee = models.ForeignKey(
         Employee,
         related_name="work_items",
@@ -60,11 +47,6 @@ class WorkItem(models.Model):
     )
     external_key = models.CharField(max_length=100, blank=True, null=True)
     url = models.URLField(blank=True, null=True)
-    source = models.CharField(
-        max_length=20,
-        choices=WorkItemSource.choices,
-        default=WorkItemSource.MANUAL,
-    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -16,7 +16,6 @@ class WorkItemSerializer(BaseModelSerializer):
             "status",
             "external_key",
             "url",
-            "source",
             "created_at",
             "updated_at",
         )
@@ -47,7 +46,6 @@ class EmployeeSerializer(BaseModelSerializer):
         read_only_fields = ("id", "created_at", "updated_at")
 
     def to_representation(self, instance):
-        """Compute load once per employee to avoid redundant DB queries."""
         load = compute_load(instance)
         instance.active_task_count = load.active_count
         instance.load_ratio = load.ratio
