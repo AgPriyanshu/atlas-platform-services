@@ -18,7 +18,7 @@ class OutgoingMessage(BaseModel):
     message: str
     user_id: str
     role: Role
-    isChunk: bool
+    is_chunk: bool
     ui_action: Optional[UIAction] = None
 
 

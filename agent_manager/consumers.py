@@ -126,30 +126,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             )
             return
 
-        # # Deduplicate retried messages from reconnecting clients.
-        # client_message_id = incoming_message.message
-
-        # if client_message_id:
-        #     dedup_key = f"agent:dedup:{client_message_id}"
-        #     is_new = await sync_to_async(cache.add)(dedup_key, "1", timeout=300)
-
-        #     if not is_new:
-        #         return
-
-        # # Prevent concurrent graph runs for the same session.
-        # lock_key = f"agent:lock:{self.session_id}"
-        # acquired = await sync_to_async(cache.add)(
-        #     lock_key, "1", timeout=AGENT_LOCK_TIMEOUT
-        # )
-
-        # if not acquired:
-        #     await self.send(
-        #         text_data=json.dumps(
-        #             {"error": "Please wait for the current response to finish."}
-        #         )
-        #     )
-        #     return
-
         saved_message = await self.create_message(
             session_id=self.session_id,
             user_id=self.user.id,
@@ -299,7 +275,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 message=content,
                 user_id=str(self.user.id),
                 role=role,
-                isChunk=is_chunk,
+                is_chunk=is_chunk,
                 ui_action=ui_action,
             ).model_dump_json()
         )
